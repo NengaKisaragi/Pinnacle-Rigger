@@ -195,7 +195,7 @@ def update_marker_constraints(scene):
         constrain_center(points)
         if settings.symmetry:
             active = scene.view_layers[0].objects.active
-            for base in ('Wrist', 'Elbow', 'Knee'):
+            for base in ('Wrist', 'Elbow', 'Knee', 'Breast', 'SkirtFront', 'SkirtBack'):
                 left, right = base + '.L', base + '.R'
                 if left not in points or right not in points:
                     continue
