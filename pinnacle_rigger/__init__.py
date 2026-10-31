@@ -116,7 +116,7 @@ class MRPlace(bpy.types.Operator):
         coord = Vector((event.mouse_x - self.region.x, event.mouse_y - self.region.y))
         if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
             if not (0 <= coord.x < self.region.width and 0 <= coord.y < self.region.height):
-                return {'RUNNING_MODAL'}
+                return {'PASS_THROUGH'}
             hits = []
             for key, obj in self.points.items():
                 if obj.hide_get():
@@ -130,7 +130,10 @@ class MRPlace(bpy.types.Operator):
                 self.start_location = self.points[self.drag_key].location.copy()
                 self.start_mouse_world = view3d_utils.region_2d_to_location_3d(
                     self.region, self.area.spaces.active.region_3d, coord, self.start_location)
-            return {'RUNNING_MODAL'}
+                return {'RUNNING_MODAL'}
+            # Let Blender's native selection and transform tools receive clicks
+            # that did not start a custom marker drag.
+            return {'PASS_THROUGH'}
         if event.type == 'MOUSEMOVE' and self.drag_key is not None:
             position = view3d_utils.region_2d_to_location_3d(
                 self.region, self.area.spaces.active.region_3d, coord, self.start_location)
@@ -140,11 +143,15 @@ class MRPlace(bpy.types.Operator):
             self.area.tag_redraw()
             return {'RUNNING_MODAL'}
         if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+            if self.drag_key is None:
+                return {'PASS_THROUGH'}
             self.drag_key = None
             self.snapshot = None
             return {'RUNNING_MODAL'}
         if self.drag_key is None and (event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE',
                                                    'TRACKPADPAN', 'TRACKPADZOOM'} or event.type.startswith('NUMPAD_')):
+            return {'PASS_THROUGH'}
+        if self.drag_key is None:
             return {'PASS_THROUGH'}
         return {'RUNNING_MODAL'}
 
