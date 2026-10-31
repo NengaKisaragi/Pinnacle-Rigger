@@ -6,7 +6,7 @@
 
 1. Blender の「編集 → プリファレンス → アドオン → ディスクからインストール」で `dist/pinnacle_rigger-0.1.0.zip` を選択します。
 2. `Pinnacle Rigger` を有効にします。
-3. 3Dビューで `N` キーを押し、**Auto Rig** タブを開きます。
+3. 3Dビューで `N` キーを押し、**Pinnacle-Rigger** タブを開きます。
 
 Blender 4.2以上を対象にしています。実機テストは **Blender 5.2.2 LTS / Linux** で実施しました。
 

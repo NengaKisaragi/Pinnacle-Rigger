@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
-    'version': (0, 1, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Auto Rig',
+    'version': (0, 1, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
     'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
@@ -229,11 +229,11 @@ class MRBuild(bpy.types.Operator):
 
 
 class MRPanel(bpy.types.Panel):
-    bl_label = 'Auto Rig'
+    bl_label = 'Pinnacle-Rigger'
     bl_idname = 'PR_PT_main'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'Auto Rig'
+    bl_category = 'Pinnacle-Rigger'
 
     def draw(self, context):
         layout = self.layout

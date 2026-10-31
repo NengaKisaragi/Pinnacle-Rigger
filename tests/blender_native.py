@@ -47,7 +47,7 @@ assert len(outputs)==2
 assert all(name not in bpy.data.objects for name in source_names)
 assert all(v.groups and abs(sum(g.weight for g in v.groups)-1)<1e-4 for o in outputs for v in o.data.vertices)
 for o in outputs:
-    name=o.name.split(' · Rigged')[0]
+    name=o.name.split(' · Pinnacle-Rigger')[0]
     assert max((p-v.co).length for p,v in zip(original[name],o.data.vertices))<1e-5
 # Force uncovered vertices to exercise explicit fallback, not just bone heat.
 for o in outputs:

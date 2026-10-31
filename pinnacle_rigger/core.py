@@ -345,8 +345,8 @@ def build(context):
     created = []
     hidden_states = [(o, o.hide_get()) for o in meshes]
     try:
-        armature = bpy.data.armatures.new('AutoRig Skeleton')
-        rig = bpy.data.objects.new('AutoRig', armature)
+        armature = bpy.data.armatures.new('Pinnacle-Rigger Skeleton')
+        rig = bpy.data.objects.new('Pinnacle-Rigger', armature)
         context.scene.collection.objects.link(rig)
         created.append(rig)
         rig.show_in_front = True
@@ -369,7 +369,7 @@ def build(context):
             data = bpy.data.meshes.new_from_object(source.evaluated_get(depsgraph), depsgraph=depsgraph, preserve_all_data_layers=True)
             data.transform(source.matrix_world)
             data.update()
-            obj = bpy.data.objects.new(source.name + ' · Rigged', data)
+            obj = bpy.data.objects.new(source.name + ' · Pinnacle-Rigger', data)
             context.scene.collection.objects.link(obj)
             created.append(obj)
             obj['mr_output'] = rig.name
@@ -390,7 +390,7 @@ def build(context):
                 pass  # Bone heat may fail for disconnected/non-manifold clothing.
             obj.parent = rig
             if not any(m.type == 'ARMATURE' and m.object == rig for m in obj.modifiers):
-                obj.modifiers.new('AutoRig', 'ARMATURE').object = rig
+                obj.modifiers.new('Pinnacle-Rigger', 'ARMATURE').object = rig
             repaired += bind_fallback(obj, rig, specs, high.z - low.z)
             # Normalize all weights, including bone heat output.
             select_only([obj])
