@@ -65,6 +65,7 @@ class MRMarkers(bpy.types.Operator):
                 center, height = core.session_bounds(context.scene.mr_settings.session)
                 region.view_location = center
                 region.view_distance = height * 1.8
+                bpy.ops.pr.place_markers('INVOKE_DEFAULT')
             return {'FINISHED'}
         except Exception as exc:
             self.report({'ERROR'}, str(exc))
@@ -265,8 +266,7 @@ class MRPanel(bpy.types.Panel):
         box = layout.box()
         box.label(text='02 / マーカー', icon='EMPTY_AXIS')
         box.prop(settings, 'symmetry')
-        box.operator('pr.place_markers', icon='RESTRICT_SELECT_OFF')
-        box.label(text='輪をつかんで移動 / Enterで完了')
+        box.label(text='輪をドラッグ / Enterで完了')
         box.label(text='顎 / 手首 / 肘 / 膝 / 股')
         box.operator('pr.mirror_markers')
         box.operator('pr.edit_markers')
