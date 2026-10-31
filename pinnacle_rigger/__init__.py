@@ -287,7 +287,7 @@ def draw_landmarks():
             blf.position(0, pos.x + 17, pos.y - 4, 0)
             blf.size(0, 12)
             blf.color(0, *color)
-            blf.draw(0, key)
+            blf.draw(0, 'Neck Top' if key == 'Chin' else key)
     finally:
         gpu.state.line_width_set(1)
         gpu.state.blend_set('NONE')
