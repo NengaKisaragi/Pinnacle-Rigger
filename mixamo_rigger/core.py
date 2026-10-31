@@ -276,7 +276,14 @@ def skeleton(points, low, high, settings=None):
         add('Skirts', points['Groin'], points['Groin'] + Vector((0, 0, h * .025)), 'Hips')
         for part in ('SkirtFront', 'SkirtBack'):
             for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
-                add(part + '.' + side, points['Groin'], points[part + suffix], 'Skirts')
+                start, end = points['Groin'], points[part + suffix]
+                previous = 'Skirts'
+                for index in range(settings.skirt_bones):
+                    head = start.lerp(end, index / settings.skirt_bones)
+                    tail = start.lerp(end, (index + 1) / settings.skirt_bones)
+                    name = f'{part}.{side}{index + 1}'
+                    add(name, head, tail, previous)
+                    previous = name
     return specs
 
 

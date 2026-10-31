@@ -43,6 +43,7 @@ class MRSettings(bpy.types.PropertyGroup):
     symmetry: BoolProperty(name='左右対称', default=True, update=symmetry_changed)
     hair_enabled: BoolProperty(name='髪', default=False)
     hair_bones: IntProperty(name='髪のボーン数', default=3, min=3, max=6)
+    skirt_bones: IntProperty(name='スカートの分割数', default=3, min=3, max=6)
     breasts_enabled: BoolProperty(name='胸', default=False)
     skirt_enabled: BoolProperty(name='スカート', default=False)
     status: StringProperty(default='モデルを読み込むか、メッシュを選択してください')
@@ -302,6 +303,9 @@ class MRPanel(bpy.types.Panel):
             hair_row.prop(settings, 'hair_bones', text='Start〜End')
             options.prop(settings, 'breasts_enabled', text='Breast')
             options.prop(settings, 'skirt_enabled', text='Skirt Front / Back')
+            skirt_row = options.row()
+            skirt_row.enabled = settings.skirt_enabled
+            skirt_row.prop(settings, 'skirt_bones', text='Front / Back')
         layout.operator('mr.create_markers')
         layout.operator('mr.clear_markers', icon='TRASH')
         box = layout.box()
