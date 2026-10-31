@@ -262,9 +262,10 @@ def skeleton(points, low, high, settings=None):
             offset_y, offset_z = finger_offsets[finger]
             start = hand + Vector((0, offset_y, offset_z))
             previous = side + 'Hand'
-            for joint in range(1, 5):
-                head = start + Vector((sign * h * .05 * (joint - 1) / 4, 0, 0))
-                tail = start + Vector((sign * h * .05 * joint / 4, 0, 0))
+            joint_count = 2 if finger == 'Thumb' else 3
+            for joint in range(1, joint_count + 1):
+                head = start + Vector((sign * h * .05 * (joint - 1) / joint_count, 0, 0))
+                tail = start + Vector((sign * h * .05 * joint / joint_count, 0, 0))
                 name = side + 'Hand' + finger + str(joint)
                 add(name, head, tail, previous)
                 previous = name
