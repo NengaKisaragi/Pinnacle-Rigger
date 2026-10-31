@@ -247,6 +247,27 @@ def skeleton(points, low, high, settings=None):
         add(side + 'Arm', arm, elbow, side + 'Shoulder')
         add(side + 'ForeArm', elbow, wrist, side + 'Arm')
         add(side + 'Hand', wrist, hand, side + 'ForeArm')
+        finger_level = int(settings.finger_level) if settings else 0
+        fingers = {
+            2: ('Thumb', 'Middle'),
+            3: ('Thumb', 'Index', 'Pinky'),
+            5: ('Thumb', 'Index', 'Middle', 'Ring', 'Pinky'),
+        }.get(finger_level, ())
+        finger_offsets = {
+            'Thumb': (0, -h * .012), 'Index': (-h * .018, h * .008),
+            'Middle': (-h * .006, 0), 'Ring': (h * .008, -h * .004),
+            'Pinky': (h * .020, -h * .009),
+        }
+        for finger in fingers:
+            offset_y, offset_z = finger_offsets[finger]
+            start = hand + Vector((0, offset_y, offset_z))
+            previous = side + 'Hand'
+            for joint in range(1, 5):
+                head = start + Vector((sign * h * .05 * (joint - 1) / 4, 0, 0))
+                tail = start + Vector((sign * h * .05 * joint / 4, 0, 0))
+                name = side + 'Hand' + finger + str(joint)
+                add(name, head, tail, previous)
+                previous = name
         thigh = Vector((hips.x + sign * max(abs(knee.x - hips.x) * .72, h * .04), hips.y, hips.z - h * .025))
         ankle = Vector((knee.x, knee.y + h * .01, low.z + h * .055))
         toe = Vector((knee.x, knee.y - h * .095, low.z + h * .025))

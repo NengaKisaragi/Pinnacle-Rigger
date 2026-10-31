@@ -6,7 +6,7 @@ bl_info = {
 }
 
 import bpy
-from bpy.props import BoolProperty, IntProperty, PointerProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, IntProperty, PointerProperty, StringProperty
 from mathutils import Vector, Quaternion
 from . import core
 from bpy.app.handlers import persistent
@@ -45,6 +45,12 @@ class MRSettings(bpy.types.PropertyGroup):
     skirt_bones: IntProperty(name='スカートの分割数', default=3, min=3, max=6)
     breasts_enabled: BoolProperty(name='胸', default=False)
     skirt_enabled: BoolProperty(name='スカート', default=False)
+    finger_level: EnumProperty(
+        name='指', default='0',
+        items=[('0', 'No Fingers (25)', '指ボーンなし'),
+               ('2', '2 Chain Fingers (41)', '親指と共通指チェーン'),
+               ('3', '3 Chain Fingers (49)', '親指・人差し指・小指のチェーン'),
+               ('5', 'Standard Skeleton (65)', '5本の指チェーン')])
     status: StringProperty(default='対象メッシュを選択してください')
     session: StringProperty()
     rig: PointerProperty(type=bpy.types.Object)
@@ -84,7 +90,7 @@ class MRPlace(bpy.types.Operator):
         core.update_marker_constraints(context.scene)
         self.points = core.markers(context.scene.mr_settings.session)
         if not any(not obj.hide_get() for obj in self.points.values()):
-            self.report({'ERROR'}, '先にマーカーを作成、または再編集してください')
+            self.report({'ERROR'}, '先にマーカーを作成してください')
             return {'CANCELLED'}
         self.area = context.area
         self.region = next(r for r in self.area.regions if r.type == 'WINDOW')
@@ -155,36 +161,6 @@ class MRPlace(bpy.types.Operator):
         if self.drag_key is None:
             return {'PASS_THROUGH'}
         return {'RUNNING_MODAL'}
-
-
-class MRMirror(bpy.types.Operator):
-    bl_idname = 'pr.mirror_markers'
-    bl_label = '左側 → 右側に反映'
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        core.sync_symmetry(context, force=True)
-        return {'FINISHED'}
-
-
-class MREdit(bpy.types.Operator):
-    bl_idname = 'pr.edit_markers'
-    bl_label = 'マーカーを再編集'
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        settings = context.scene.mr_settings
-        for obj in core.sources(settings.session):
-            obj.hide_set(False)
-        for obj in core.markers(settings.session).values():
-            obj.hide_set(False)
-        rig = settings.rig
-        if rig:
-            rig.hide_set(True)
-            for obj in context.scene.objects:
-                if obj.get('mr_output') == rig.name:
-                    obj.hide_set(True)
-        return {'FINISHED'}
 
 
 class MRClearMarkers(bpy.types.Operator):
@@ -261,6 +237,7 @@ class MRPanel(bpy.types.Panel):
             skirt_row = options.row()
             skirt_row.enabled = settings.skirt_enabled
             skirt_row.prop(settings, 'skirt_bones', text='Front / Back')
+            options.prop(settings, 'finger_level', text='指')
         layout.operator('pr.create_markers')
         layout.operator('pr.clear_markers', icon='TRASH')
         box = layout.box()
@@ -268,12 +245,10 @@ class MRPanel(bpy.types.Panel):
         box.prop(settings, 'symmetry')
         box.label(text='輪をドラッグ / Enterで完了')
         box.label(text='顎 / 手首 / 肘 / 膝 / 股')
-        box.operator('pr.mirror_markers')
-        box.operator('pr.edit_markers')
         box.label(text='対称ON: 通常の移動でも左右が追従')
         box.label(text='Chin / Groin は常に X = 0')
         layout.label(text='03 / 骨格 + ウェイト', icon='ARMATURE_DATA')
-        layout.label(text='No Fingers · ベース25 bones + オプション')
+        layout.label(text=f'{int(settings.finger_level) * 8 + 25} bones + オプション')
         layout.operator('pr.build_rig', icon='MOD_ARMATURE')
         layout.separator()
         for part in settings.status.split(' / '):
@@ -281,7 +256,7 @@ class MRPanel(bpy.types.Panel):
         layout.label(text='Pinnacle Rigger · ver1.0')
 
 
-classes = (MRSettings, MRMarkers, MRPlace, MRMirror, MREdit, MRClearMarkers, MRBuild, MRPanel)
+classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRPanel)
 
 
 _draw_handle = None
