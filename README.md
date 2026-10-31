@@ -1,5 +1,7 @@
 # Pinnacle Rigger · Local Auto Rig v0.1
 
+![Pinnacle-Rigger running in Blender](docs/images/pinnacle-rigger-ui.png)
+
 選択中のメッシュからマーカーを調整して、人型の骨格とウェイトを生成する **Blenderアドオン**です。最初の対象はZ上向き・正面−YのTポーズです。モデルを外部へ送信せずローカルで処理します。
 
 ## インストール
