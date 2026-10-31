@@ -196,6 +196,38 @@ class MREdit(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRClearMarkers(bpy.types.Operator):
+    bl_idname = 'mr.clear_markers'
+    bl_label = 'マーカーを全消去'
+    bl_description = '現在のセッションのマーカーを消し、対象メッシュを選び直します'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        settings = context.scene.mr_settings
+        session = settings.session
+        points = core.markers(session, context.scene)
+        source_meshes = core.sources(session, context.scene)
+        marker_collections = {collection for marker in points.values() for collection in marker.users_collection}
+        if not points:
+            self.report({'INFO'}, '消去するマーカーはありません')
+            return {'CANCELLED'}
+        for marker in points.values():
+            bpy.data.objects.remove(marker, do_unlink=True)
+        for source in source_meshes:
+            source.pop('mr_source', None)
+            source.hide_set(False)
+        for collection in marker_collections:
+            if collection.users == 0 or (not collection.objects and not collection.children):
+                bpy.data.collections.remove(collection)
+        settings.session = ''
+        settings.rig = None
+        settings.status = 'マーカーを消去しました。オプションを選び直して再作成できます'
+        meshes = source_meshes
+        if meshes:
+            core.select_only(meshes)
+        return {'FINISHED'}
+
+
 class MRBuild(bpy.types.Operator):
     bl_idname = 'mr.build_rig'
     bl_label = 'リグを生成（自動ウェイト）'
@@ -261,16 +293,17 @@ class MRPanel(bpy.types.Panel):
         layout.operator('mr.import_blend', icon='FILE_FOLDER')
         layout.label(text='Tポーズ / Z上 / 正面は −Y')
         layout.label(text='対象メッシュをすべて選択')
-        opt = layout.box()
-        opt.label(text='追加ボーン', icon='OUTLINER_OB_ARMATURE')
-        row = opt.row(align=True)
-        row.prop(settings, 'hair_enabled', text='Hair')
-        hair_row = opt.row()
-        hair_row.enabled = settings.hair_enabled
-        hair_row.prop(settings, 'hair_bones', text='Start〜End')
-        opt.prop(settings, 'breasts_enabled', text='Breasts（左右）')
-        opt.prop(settings, 'skirt_enabled', text='Skirt Front / Back（左右）')
+        header, options = layout.panel('mr_optional_rig_options', default_closed=True)
+        header.label(text='オプション', icon='OUTLINER_OB_ARMATURE')
+        if options:
+            options.prop(settings, 'hair_enabled', text='Hair')
+            hair_row = options.row()
+            hair_row.enabled = settings.hair_enabled
+            hair_row.prop(settings, 'hair_bones', text='Start〜End')
+            options.prop(settings, 'breasts_enabled', text='Breast')
+            options.prop(settings, 'skirt_enabled', text='Skirt Front / Back')
         layout.operator('mr.create_markers')
+        layout.operator('mr.clear_markers', icon='TRASH')
         box = layout.box()
         box.label(text='02 / マーカー', icon='EMPTY_AXIS')
         box.prop(settings, 'symmetry')
@@ -291,7 +324,7 @@ class MRPanel(bpy.types.Panel):
         layout.label(text='v0.1 · ローカル処理 / Adobe非公式')
 
 
-classes = (MRSettings, MRImport, MRMarkers, MRPlace, MRMirror, MREdit, MRBuild, MRSave, MRPanel)
+classes = (MRSettings, MRImport, MRMarkers, MRPlace, MRMirror, MREdit, MRClearMarkers, MRBuild, MRSave, MRPanel)
 
 
 _draw_handle = None

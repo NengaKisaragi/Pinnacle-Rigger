@@ -7,7 +7,7 @@ from mathutils import Vector
 PREFIX = 'mixamorig:'
 COLORS = {'Chin': (0, .85, .85, 1), 'Wrist': (.55, .9, .15, 1),
           'Elbow': (1, .85, .2, 1), 'Knee': (1, .45, .1, 1), 'Groin': (1, .2, .5, 1),
-          'Hair': (.25, .75, 1, 1), 'Breasts': (1, .35, .65, 1),
+          'Hair': (.25, .75, 1, 1), 'Breast': (1, .35, .65, 1),
           'SkirtFront': (1, .55, .18, 1), 'SkirtBack': (.75, .4, 1, 1)}
 
 
@@ -118,7 +118,7 @@ def create_markers(context):
     if settings.hair_enabled:
         optional.update({'Hair.Start': (0, .90, .08), 'Hair.End': (0, .76, .30)})
     if settings.breasts_enabled:
-        optional.update({'Breasts.L': (.105, .68, -.22), 'Breasts.R': (-.105, .68, -.22)})
+        optional.update({'Breast.L': (.105, .68, -.22), 'Breast.R': (-.105, .68, -.22)})
     if settings.skirt_enabled:
         optional.update({'SkirtFront.L': (.10, .50, -.22), 'SkirtFront.R': (-.10, .50, -.22),
                          'SkirtBack.L': (.10, .50, .22), 'SkirtBack.R': (-.10, .50, .22)})
@@ -269,7 +269,7 @@ def skeleton(points, low, high, settings=None):
         for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
             chest = points['Groin'].lerp(points['Chin'], .72)
             anchor = Vector((chest.x + (.055 if suffix == '.L' else -.055) * (high.x-low.x), chest.y, chest.z))
-            add('Breast.' + side, anchor, points['Breasts' + suffix], 'Spine2')
+            add('Breast.' + side, anchor, points['Breast' + suffix], 'Spine2')
     if settings and settings.skirt_enabled:
         for part in ('SkirtFront', 'SkirtBack'):
             for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
