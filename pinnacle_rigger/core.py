@@ -351,7 +351,7 @@ def build(context):
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
-        rig['mr_version'] = '0.1.0'
+        rig['mr_version'] = '1.0.0'
         select_only([rig])
         bpy.ops.object.mode_set(mode='EDIT')
         for name, head, tail, parent in specs:

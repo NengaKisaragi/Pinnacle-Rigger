@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
-    'version': (0, 1, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
+    'version': (1, 0, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
     'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
@@ -271,7 +271,7 @@ class MRPanel(bpy.types.Panel):
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
-        layout.label(text='Pinnacle Rigger · v0.1')
+        layout.label(text='Pinnacle Rigger · ver1.0')
 
 
 classes = (MRSettings, MRMarkers, MRPlace, MRMirror, MREdit, MRClearMarkers, MRBuild, MRPanel)

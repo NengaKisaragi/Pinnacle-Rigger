@@ -1,4 +1,4 @@
-# Pinnacle Rigger · Local Auto Rig
+# Pinnacle Rigger · Local Auto Rig ver1.0
 
 ![Pinnacle-Rigger running in Blender](docs/images/pinnacle-rigger-ui.png)
 
@@ -25,7 +25,7 @@ Blender 4.2以上を対象にしています。実機テストはBlender 5.2.2 L
 
 対象の選択，マーカー作成，リグ生成はBlenderのUndoに対応しています。読み込んだオブジェクトのカスタムプロパティ `mr_*` は，このアドオンのセッション情報として予約しています。
 
-## v1.0 の範囲
+## ver1.0 の範囲
 
 - **指なし25ボーン**。`mixamorig:Hips`，`LeftArm` 等の命名を使います。指の41/49/65ボーン，IK，アニメーション一覧，リターゲットは未実装です。
 - 顎・手首・肘・膝・股の8マーカー。肩・背骨・足首・足先は体格比率から推定します。初期位置はヒューリスティックであり，学習済みの人体認識ではありません。
