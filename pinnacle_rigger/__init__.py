@@ -47,10 +47,10 @@ class MRSettings(bpy.types.PropertyGroup):
     skirt_enabled: BoolProperty(name='スカート', default=False)
     finger_level: EnumProperty(
         name='指', default='0',
-        items=[('0', 'No Fingers (25)', '指ボーンなし'),
-               ('2', '2 Chain Fingers (41)', '親指と共通指チェーン'),
-               ('3', '3 Chain Fingers (49)', '親指・人差し指・小指のチェーン'),
-               ('5', 'Standard Skeleton (65)', '5本の指チェーン')])
+        items=[('0', 'No Fingers', '指ボーンなし'),
+               ('2', '2 Chain Fingers', '親指と共通指チェーン'),
+               ('3', '3 Chain Fingers', '親指・人差し指・小指のチェーン'),
+               ('5', 'Standard Skeleton', '5本の指チェーン')])
     status: StringProperty(default='対象メッシュを選択してください')
     session: StringProperty()
     rig: PointerProperty(type=bpy.types.Object)
