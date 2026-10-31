@@ -58,7 +58,7 @@ class MRSettings(bpy.types.PropertyGroup):
 
 class MRMarkers(bpy.types.Operator):
     bl_idname = 'pr.create_markers'
-    bl_label = '選択メッシュからマーカーを作成'
+    bl_label = 'マーカー作成'
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -80,8 +80,8 @@ class MRMarkers(bpy.types.Operator):
 
 class MRPlace(bpy.types.Operator):
     bl_idname = 'pr.place_markers'
-    bl_label = 'マーカーをドラッグで配置'
-    bl_description = '色付きの輪を自由な順番でドラッグ。Enterで完了、Escでドラッグを取り消し'
+    bl_label = 'マーカー配置'
+    bl_description = '色付きの輪を自由な順番でドラッグ。Escで移動を取り消し、もう一度で終了'
     bl_options = {'REGISTER', 'UNDO', 'BLOCKING'}
 
     def invoke(self, context, event):
@@ -93,11 +93,12 @@ class MRPlace(bpy.types.Operator):
             self.report({'ERROR'}, '先にマーカーを作成してください')
             return {'CANCELLED'}
         self.area = context.area
+        self.session = context.scene.mr_settings.session
         self.region = next(r for r in self.area.regions if r.type == 'WINDOW')
         self.drag_key = None
         self.snapshot = None
         self.low, self.high = core.bounds(core.sources(context.scene.mr_settings.session))
-        self.area.header_text_set('輪をドラッグ（順番自由） / Enter: 完了 / Esc: 移動を取消・終了')
+        self.area.header_text_set('輪をドラッグ（順番自由） / Esc: 移動を取消・もう一度で終了')
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -109,6 +110,10 @@ class MRPlace(bpy.types.Operator):
 
     def modal(self, context, event):
         from bpy_extras import view3d_utils
+        if context.scene.mr_settings.session != self.session:
+            self.area.header_text_set(None)
+            self.area.tag_redraw()
+            return {'FINISHED'}
         if event.type in {'ESC', 'RIGHTMOUSE'} and event.value == 'PRESS':
             if self.drag_key is not None:
                 for key, location in self.snapshot.items():
@@ -117,8 +122,6 @@ class MRPlace(bpy.types.Operator):
                 self.snapshot = None
                 self.area.tag_redraw()
                 return {'RUNNING_MODAL'}
-            return self.finish(context)
-        if event.type in {'RET', 'NUMPAD_ENTER'} and event.value == 'PRESS':
             return self.finish(context)
         coord = Vector((event.mouse_x - self.region.x, event.mouse_y - self.region.y))
         if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
@@ -165,7 +168,7 @@ class MRPlace(bpy.types.Operator):
 
 class MRClearMarkers(bpy.types.Operator):
     bl_idname = 'pr.clear_markers'
-    bl_label = 'マーカーを全消去'
+    bl_label = 'マーカー消去'
     bl_description = '現在のセッションのマーカーを消し、対象メッシュを選び直します'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -243,12 +246,6 @@ class MRPanel(bpy.types.Panel):
         box = layout.box()
         box.label(text='02 / マーカー', icon='EMPTY_AXIS')
         box.prop(settings, 'symmetry')
-        box.label(text='輪をドラッグ / Enterで完了')
-        box.label(text='顎 / 手首 / 肘 / 膝 / 股')
-        box.label(text='対称ON: 通常の移動でも左右が追従')
-        box.label(text='Chin / Groin は常に X = 0')
-        layout.label(text='03 / 骨格 + ウェイト', icon='ARMATURE_DATA')
-        layout.label(text=f'{int(settings.finger_level) * 8 + 25} bones + オプション')
         layout.operator('pr.build_rig', icon='MOD_ARMATURE')
         layout.separator()
         for part in settings.status.split(' / '):

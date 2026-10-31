@@ -341,7 +341,7 @@ def build(context):
     meshes, landmark_objects = sources(session), markers(session)
     required = {'Chin', 'Groin', 'Wrist.L', 'Wrist.R', 'Elbow.L', 'Elbow.R', 'Knee.L', 'Knee.R'}
     if not session or not meshes or not required.issubset(landmark_objects):
-        raise ValueError('基本マーカーがありません。マーカーを全消去して再作成してください')
+        raise ValueError('基本マーカーがありません。「マーカー消去」を押して再作成してください')
     settings = context.scene.mr_settings
     expected_optional = set()
     if settings.hair_enabled:
@@ -358,7 +358,7 @@ def build(context):
         expected_optional.update({f'Skirt{part}.{side}' for part in ('Front', 'Back') for side in ('L', 'R')})
     missing_optional = expected_optional - landmark_objects.keys()
     if missing_optional:
-        raise ValueError('選択中のオプション用マーカーがありません。マーカーを全消去して再作成してください')
+        raise ValueError('選択中のオプション用マーカーがありません。「マーカー消去」を押して再作成してください')
     sync_symmetry(context)
     low, high = bounds(meshes)
     specs = skeleton({k: o.location.copy() for k, o in landmark_objects.items()}, low, high, context.scene.mr_settings)
