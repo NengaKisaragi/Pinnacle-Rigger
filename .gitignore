@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.blend1
+*.blend2
+core
+
+# Local demo files may contain user supplied character assets.
+examples/
+*.blend
+*.fbx
