@@ -1,7 +1,7 @@
 bl_info = {
-    'name': 'Mixamo Rigger — Local Auto Rig', 'author': 'Mixamo Rigger contributors',
+    'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
     'version': (0, 1, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Auto Rig',
-    'description': 'Import .blend, place landmarks and generate a local humanoid rig',
+    'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
 
@@ -51,7 +51,7 @@ class MRSettings(bpy.types.PropertyGroup):
 
 
 class MRMarkers(bpy.types.Operator):
-    bl_idname = 'mr.create_markers'
+    bl_idname = 'pr.create_markers'
     bl_label = '選択メッシュからマーカーを作成'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -72,7 +72,7 @@ class MRMarkers(bpy.types.Operator):
 
 
 class MRPlace(bpy.types.Operator):
-    bl_idname = 'mr.place_markers'
+    bl_idname = 'pr.place_markers'
     bl_label = 'マーカーをドラッグで配置'
     bl_description = '色付きの輪を自由な順番でドラッグ。Enterで完了、Escでドラッグを取り消し'
     bl_options = {'REGISTER', 'UNDO', 'BLOCKING'}
@@ -150,7 +150,7 @@ class MRPlace(bpy.types.Operator):
 
 
 class MRMirror(bpy.types.Operator):
-    bl_idname = 'mr.mirror_markers'
+    bl_idname = 'pr.mirror_markers'
     bl_label = '左側 → 右側に反映'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -160,7 +160,7 @@ class MRMirror(bpy.types.Operator):
 
 
 class MREdit(bpy.types.Operator):
-    bl_idname = 'mr.edit_markers'
+    bl_idname = 'pr.edit_markers'
     bl_label = 'マーカーを再編集'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -180,7 +180,7 @@ class MREdit(bpy.types.Operator):
 
 
 class MRClearMarkers(bpy.types.Operator):
-    bl_idname = 'mr.clear_markers'
+    bl_idname = 'pr.clear_markers'
     bl_label = 'マーカーを全消去'
     bl_description = '現在のセッションのマーカーを消し、対象メッシュを選び直します'
     bl_options = {'REGISTER', 'UNDO'}
@@ -212,7 +212,7 @@ class MRClearMarkers(bpy.types.Operator):
 
 
 class MRBuild(bpy.types.Operator):
-    bl_idname = 'mr.build_rig'
+    bl_idname = 'pr.build_rig'
     bl_label = 'リグを生成（自動ウェイト）'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -230,7 +230,7 @@ class MRBuild(bpy.types.Operator):
 
 class MRPanel(bpy.types.Panel):
     bl_label = 'Auto Rig'
-    bl_idname = 'MR_PT_main'
+    bl_idname = 'PR_PT_main'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'Auto Rig'
@@ -253,25 +253,25 @@ class MRPanel(bpy.types.Panel):
             skirt_row = options.row()
             skirt_row.enabled = settings.skirt_enabled
             skirt_row.prop(settings, 'skirt_bones', text='Front / Back')
-        layout.operator('mr.create_markers')
-        layout.operator('mr.clear_markers', icon='TRASH')
+        layout.operator('pr.create_markers')
+        layout.operator('pr.clear_markers', icon='TRASH')
         box = layout.box()
         box.label(text='02 / マーカー', icon='EMPTY_AXIS')
         box.prop(settings, 'symmetry')
-        box.operator('mr.place_markers', icon='RESTRICT_SELECT_OFF')
+        box.operator('pr.place_markers', icon='RESTRICT_SELECT_OFF')
         box.label(text='輪をつかんで移動 / Enterで完了')
         box.label(text='顎 / 手首 / 肘 / 膝 / 股')
-        box.operator('mr.mirror_markers')
-        box.operator('mr.edit_markers')
+        box.operator('pr.mirror_markers')
+        box.operator('pr.edit_markers')
         box.label(text='対称ON: 通常の移動でも左右が追従')
         box.label(text='Chin / Groin は常に X = 0')
         layout.label(text='03 / 骨格 + ウェイト', icon='ARMATURE_DATA')
         layout.label(text='No Fingers · ベース25 bones + オプション')
-        layout.operator('mr.build_rig', icon='MOD_ARMATURE')
+        layout.operator('pr.build_rig', icon='MOD_ARMATURE')
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
-        layout.label(text='v0.1 · ローカル処理 / Adobe非公式')
+        layout.label(text='Pinnacle Rigger · v0.1')
 
 
 classes = (MRSettings, MRMarkers, MRPlace, MRMirror, MREdit, MRClearMarkers, MRBuild, MRPanel)

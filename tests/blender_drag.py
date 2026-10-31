@@ -7,11 +7,12 @@ from mathutils import Vector, Quaternion, Matrix
 from bpy_extras import view3d_utils
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-import mixamo_rigger
-from mixamo_rigger import core
-mixamo_rigger.register()
-bpy.ops.wm.open_mainfile(filepath=str(Path(__import__('tempfile').gettempdir()) / 'mixamo-rigger-tests' / 'noufu_autorig.blend'))
-bpy.ops.mr.edit_markers()
+import pinnacle_rigger
+from pinnacle_rigger import core
+pinnacle_rigger.register()
+bpy.ops.wm.open_mainfile(filepath=str(Path(__import__('tempfile').gettempdir()) / 'pinnacle-rigger-tests' / 'noufu_autorig.blend'))
+core.select_only([o for o in bpy.context.scene.objects if o.type == 'MESH'])
+core.create_markers(bpy.context)
 scene = bpy.context.scene
 points = core.markers(scene.mr_settings.session)
 # Explicit viewport matrices let headless Blender exercise the real projection
@@ -26,9 +27,9 @@ area = SimpleNamespace(type='VIEW_3D', regions=[region],
     spaces=SimpleNamespace(active=SimpleNamespace(region_3d=view)),
     header_text_set=lambda _: None, tag_redraw=lambda: None)
 class Harness:
-    invoke = mixamo_rigger.MRPlace.invoke
-    modal = mixamo_rigger.MRPlace.modal
-    finish = mixamo_rigger.MRPlace.finish
+    invoke = pinnacle_rigger.MRPlace.invoke
+    modal = pinnacle_rigger.MRPlace.modal
+    finish = pinnacle_rigger.MRPlace.finish
     def report(self, *_): pass
 ctx = SimpleNamespace(area=area, scene=scene,
                       window_manager=SimpleNamespace(modal_handler_add=lambda _: None))
@@ -112,9 +113,9 @@ for key in ('Chin','Groin'):
     core.move_landmark(points,key,(.3,.02,.8),False,4.0)
     assert points[key].location.x==0.0
 # Clean registration lifecycle must never accumulate duplicate handlers.
-assert bpy.app.handlers.depsgraph_update_post.count(mixamo_rigger.maintain_markers)==1
-mixamo_rigger.unregister()
-assert mixamo_rigger.maintain_markers not in bpy.app.handlers.depsgraph_update_post
-mixamo_rigger.register()
-assert bpy.app.handlers.depsgraph_update_post.count(mixamo_rigger.maintain_markers)==1
+assert bpy.app.handlers.depsgraph_update_post.count(pinnacle_rigger.maintain_markers)==1
+pinnacle_rigger.unregister()
+assert pinnacle_rigger.maintain_markers not in bpy.app.handlers.depsgraph_update_post
+pinnacle_rigger.register()
+assert bpy.app.handlers.depsgraph_update_post.count(pinnacle_rigger.maintain_markers)==1
 print('NATIVE_SYMMETRY_PASS: direct transforms, Blender translate, right-side changes, symmetry off, unconditional center locks, handler lifecycle')
