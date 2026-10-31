@@ -7,7 +7,6 @@ bl_info = {
 
 import bpy
 from bpy.props import BoolProperty, IntProperty, PointerProperty, StringProperty
-from bpy_extras.io_utils import ImportHelper
 from mathutils import Vector, Quaternion
 from . import core
 from bpy.app.handlers import persistent
@@ -46,26 +45,9 @@ class MRSettings(bpy.types.PropertyGroup):
     skirt_bones: IntProperty(name='スカートの分割数', default=3, min=3, max=6)
     breasts_enabled: BoolProperty(name='胸', default=False)
     skirt_enabled: BoolProperty(name='スカート', default=False)
-    status: StringProperty(default='モデルを読み込むか、メッシュを選択してください')
+    status: StringProperty(default='対象メッシュを選択してください')
     session: StringProperty()
     rig: PointerProperty(type=bpy.types.Object)
-
-
-class MRImport(bpy.types.Operator, ImportHelper):
-    bl_idname = 'mr.import_blend'
-    bl_label = '.blend を読み込む'
-    bl_options = {'REGISTER', 'UNDO'}
-    filename_ext = '.blend'
-    filter_glob: StringProperty(default='*.blend', options={'HIDDEN'})
-
-    def execute(self, context):
-        try:
-            objects = core.import_blend(self.filepath, context)
-            context.scene.mr_settings.status = f'{len(objects)} メッシュを読み込みました'
-            return {'FINISHED'}
-        except Exception as exc:
-            self.report({'ERROR'}, str(exc))
-            return {'CANCELLED'}
 
 
 class MRMarkers(bpy.types.Operator):
@@ -246,42 +228,8 @@ class MRBuild(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class MRSave(bpy.types.Operator, ImportHelper):
-    bl_idname = 'mr.save_result'
-    bl_label = '作業を別名 .blend 保存'
-    bl_options = {'REGISTER'}
-    filename_ext = '.blend'
-    filter_glob: StringProperty(default='*.blend', options={'HIDDEN'})
-    check_existing: BoolProperty(default=True, options={'HIDDEN'})
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.abspath('//AutoRig.blend')
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-    def execute(self, context):
-        rig = context.scene.mr_settings.rig
-        if not rig:
-            self.report({'ERROR'}, '先にリグを生成してください')
-            return {'CANCELLED'}
-        from pathlib import Path
-        path = Path(bpy.path.ensure_ext(self.filepath, '.blend'))
-        if path.exists():
-            self.report({'ERROR'}, '上書き防止: 新しいファイル名を指定してください')
-            return {'CANCELLED'}
-        try:
-            # Saving a copy retains the current file path and includes editable
-            # landmarks, source meshes, materials and the generated result.
-            bpy.ops.wm.save_as_mainfile(filepath=str(path), copy=True)
-        except Exception as exc:
-            self.report({'ERROR'}, str(exc))
-            return {'CANCELLED'}
-        context.scene.mr_settings.status = f'保存しました: {path.name}'
-        return {'FINISHED'}
-
-
 class MRPanel(bpy.types.Panel):
-    bl_label = 'LOCAL AUTO RIGGER'
+    bl_label = 'Auto Rig'
     bl_idname = 'MR_PT_main'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -291,7 +239,6 @@ class MRPanel(bpy.types.Panel):
         layout = self.layout
         settings = context.scene.mr_settings
         layout.label(text='01 / モデル', icon='MESH_DATA')
-        layout.operator('mr.import_blend', icon='FILE_FOLDER')
         layout.label(text='Tポーズ / Z上 / 正面は −Y')
         layout.label(text='対象メッシュをすべて選択')
         header, options = layout.panel('mr_optional_rig_options', default_closed=True)
@@ -321,14 +268,13 @@ class MRPanel(bpy.types.Panel):
         layout.label(text='03 / 骨格 + ウェイト', icon='ARMATURE_DATA')
         layout.label(text='No Fingers · ベース25 bones + オプション')
         layout.operator('mr.build_rig', icon='MOD_ARMATURE')
-        layout.operator('mr.save_result', icon='FILE_TICK')
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
         layout.label(text='v0.1 · ローカル処理 / Adobe非公式')
 
 
-classes = (MRSettings, MRImport, MRMarkers, MRPlace, MRMirror, MREdit, MRClearMarkers, MRBuild, MRSave, MRPanel)
+classes = (MRSettings, MRMarkers, MRPlace, MRMirror, MREdit, MRClearMarkers, MRBuild, MRPanel)
 
 
 _draw_handle = None

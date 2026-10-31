@@ -341,14 +341,13 @@ def build(context):
     sync_symmetry(context)
     low, high = bounds(meshes)
     specs = skeleton({k: o.location.copy() for k, o in landmark_objects.items()}, low, high, context.scene.mr_settings)
-    collection = bpy.data.collections.new('AutoRig · Result')
-    context.scene.collection.children.link(collection)
+    marker_collection = next((c for c in bpy.data.collections if c.name.startswith('AutoRig · Markers') and any(o.get('mr_session') == session for o in c.objects)), None)
     created = []
     hidden_states = [(o, o.hide_get()) for o in meshes]
     try:
         armature = bpy.data.armatures.new('AutoRig Skeleton')
         rig = bpy.data.objects.new('AutoRig', armature)
-        collection.objects.link(rig)
+        context.scene.collection.objects.link(rig)
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
@@ -371,7 +370,7 @@ def build(context):
             data.transform(source.matrix_world)
             data.update()
             obj = bpy.data.objects.new(source.name + ' · Rigged', data)
-            collection.objects.link(obj)
+            context.scene.collection.objects.link(obj)
             created.append(obj)
             obj['mr_output'] = rig.name
             # Discard copied vertex deform indices, which refer to source groups.
@@ -401,11 +400,21 @@ def build(context):
         for obj in context.scene.objects:
             if obj.name in old_rigs or obj.get('mr_output') in old_rigs:
                 obj.hide_set(True)
-        for source in meshes:
-            source.hide_set(True)
-        for marker in landmark_objects.values():
-            marker.hide_set(True)
+        # Do all potentially failing selection work before removing originals.
         select_only([rig])
+        # Keep only the generated rig and meshes in the scene hierarchy.
+        for marker in landmark_objects.values():
+            bpy.data.objects.remove(marker, do_unlink=True)
+        if marker_collection and not marker_collection.objects and not marker_collection.children:
+            bpy.data.collections.remove(marker_collection)
+        for source in meshes:
+            old_mesh = source.data if source.type == 'MESH' else None
+            bpy.data.objects.remove(source, do_unlink=True)
+            if old_mesh and old_mesh.users == 0:
+                bpy.data.meshes.remove(old_mesh)
+        settings = context.scene.mr_settings
+        settings.session = ''
+        _marker_positions.clear()
         total = sum(len(o.data.vertices) for o in outputs)
         report = f'{len(specs)}ボーン / {total:,}頂点 / 距離補完 {repaired:,}頂点'
         rig['mr_report'] = report
@@ -415,7 +424,6 @@ def build(context):
         object_mode()
         for obj in reversed(created):
             bpy.data.objects.remove(obj, do_unlink=True)
-        bpy.data.collections.remove(collection)
         for obj, hidden in hidden_states:
             obj.hide_set(hidden)
         raise
