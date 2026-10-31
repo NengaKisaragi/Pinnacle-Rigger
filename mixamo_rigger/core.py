@@ -257,8 +257,9 @@ def skeleton(points, low, high, settings=None):
         add(side + 'Toe_End', toe + Vector((0, -h * .025, 0)), toe + Vector((0, -h * .035, 0)), side + 'ToeBase')
     if settings and settings.hair_enabled:
         start, end = points['Hair.Start'], points['Hair.End']
+        add('Hairs', start, start + Vector((0, 0, h * .025)), 'Head')
         count = settings.hair_bones
-        previous = 'Head'
+        previous = 'Hairs'
         for index in range(count):
             head = start.lerp(end, index / count)
             tail = start.lerp(end, (index + 1) / count)
@@ -266,14 +267,16 @@ def skeleton(points, low, high, settings=None):
             add(name, head, tail, previous)
             previous = name
     if settings and settings.breasts_enabled:
+        chest = points['Groin'].lerp(points['Chin'], .72)
+        add('Breasts', Vector((0, chest.y, chest.z)), Vector((0, chest.y, chest.z + h * .025)), 'Spine2')
         for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
-            chest = points['Groin'].lerp(points['Chin'], .72)
             anchor = Vector((chest.x + (.055 if suffix == '.L' else -.055) * (high.x-low.x), chest.y, chest.z))
-            add('Breast.' + side, anchor, points['Breast' + suffix], 'Spine2')
+            add('Breast.' + side, anchor, points['Breast' + suffix], 'Breasts')
     if settings and settings.skirt_enabled:
+        add('Skirts', points['Groin'], points['Groin'] + Vector((0, 0, h * .025)), 'Hips')
         for part in ('SkirtFront', 'SkirtBack'):
             for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
-                add(part + '.' + side, points['Groin'], points[part + suffix], 'Hips')
+                add(part + '.' + side, points['Groin'], points[part + suffix], 'Skirts')
     return specs
 
 
@@ -287,7 +290,7 @@ def bind_fallback(obj, rig, specs, height):
     """Distance skinning for vertices that bone heat could not bind. Explicitly reported."""
     repaired = 0
     bone_names = {name for name, *_ in specs}
-    deform_indices = {g.index for g in obj.vertex_groups if g.name in bone_names}
+    deform_indices = {g.index for g in obj.vertex_groups if g.name in bone_names and not g.name.endswith((':Hairs', ':Breasts', ':Skirts'))}
     for vertex in obj.data.vertices:
         if sum(g.weight for g in vertex.groups if g.group in deform_indices) > 1e-6:
             continue
@@ -308,8 +311,26 @@ def build(context):
     object_mode()
     session = context.scene.mr_settings.session
     meshes, landmark_objects = sources(session), markers(session)
-    if not session or not meshes or len(landmark_objects) != 8:
-        raise ValueError('先に対象メッシュからマーカーを作成してください')
+    required = {'Chin', 'Groin', 'Wrist.L', 'Wrist.R', 'Elbow.L', 'Elbow.R', 'Knee.L', 'Knee.R'}
+    if not session or not meshes or not required.issubset(landmark_objects):
+        raise ValueError('基本マーカーがありません。マーカーを全消去して再作成してください')
+    settings = context.scene.mr_settings
+    expected_optional = set()
+    if settings.hair_enabled:
+        expected_optional.update({'Hair.Start', 'Hair.End'})
+    if settings.breasts_enabled:
+        expected_optional.update({'Breast.L', 'Breast.R'})
+        # Migrate markers created by the earlier plural label.
+        for side in ('L', 'R'):
+            old = landmark_objects.pop('Breasts.' + side, None)
+            if old and 'Breast.' + side not in landmark_objects:
+                old['mr_landmark'] = 'Breast.' + side
+                landmark_objects['Breast.' + side] = old
+    if settings.skirt_enabled:
+        expected_optional.update({f'Skirt{part}.{side}' for part in ('Front', 'Back') for side in ('L', 'R')})
+    missing_optional = expected_optional - landmark_objects.keys()
+    if missing_optional:
+        raise ValueError('選択中のオプション用マーカーがありません。マーカーを全消去して再作成してください')
     sync_symmetry(context)
     low, high = bounds(meshes)
     specs = skeleton({k: o.location.copy() for k, o in landmark_objects.items()}, low, high, context.scene.mr_settings)
@@ -330,6 +351,7 @@ def build(context):
         for name, head, tail, parent in specs:
             bone = armature.edit_bones.new(name)
             bone.head, bone.tail = head, tail
+            bone.use_deform = name not in {PREFIX + 'Hairs', PREFIX + 'Breasts', PREFIX + 'Skirts'}
             if parent:
                 bone.parent = armature.edit_bones[parent]
             bone.use_connect = bool(parent and (bone.parent.tail - bone.head).length < 1e-5)
