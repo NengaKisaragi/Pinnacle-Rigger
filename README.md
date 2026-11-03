@@ -1,4 +1,4 @@
-# Pinnacle Rigger · Local Auto Rig ver1.0
+# Pinnacle Rigger · Local Auto Rig ver1.01
 
 ![Pinnacle-Rigger running in Blender](docs/images/pinnacle-rigger-ui.png)
 
@@ -7,7 +7,7 @@
 
 ## インストール
 
-1. Blender の「編集 → プリファレンス → アドオン → ディスクからインストール」で `dist/pinnacle_rigger-1.0.0.zip` を選択します。
+1. Blender の「編集 → プリファレンス → アドオン → ディスクからインストール」で `dist/pinnacle_rigger-1.01.zip` を選択します。
 2. `Pinnacle Rigger` を有効にします。
 3. 3Dビューで `N` キーを押し，**Pinnacle-Rigger** タブを開きます。
 
@@ -31,7 +31,7 @@ Blender 4.2以上を対象にしています。実機テストはBlender 5.2.2 L
 
 対象の選択，マーカー作成，リグ生成はBlenderのUndoに対応しています。読み込んだオブジェクトのカスタムプロパティ `mr_*` は，このアドオンのセッション情報として予約しています。
 
-## ver1.0 の範囲
+## ver1.01 の範囲
 
 - 指ボーンはNo Fingers、2 Chain Fingers、3 Chain Fingers、Standard Skeletonから選べます。手首位置から指を推定し，親指は2節，ほかの指は3節で生成します。`mixamorig:Hips`，`LeftArm` 等の命名を使います。IK，アニメーション一覧，リターゲットは未実装です。
 - Neck Top（顎の高さにある首の上端）・手首・肘・膝・股の8マーカー。肩・背骨・足首・足先は体格比率から推定します。初期位置はヒューリスティックであり，学習済みの人体認識ではありません。
