@@ -218,7 +218,7 @@ class MRBuild(bpy.types.Operator):
 class MRDeleteRig(bpy.types.Operator):
     bl_idname = 'pr.delete_rig'
     bl_label = 'リグ削除'
-    bl_description = '生成したリグとスキン済みメッシュを削除します。元モデルは再読み込みしてください'
+    bl_description = 'リグとウェイトを削除し、スキン済みメッシュを残します'
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -233,14 +233,26 @@ class MRDeleteRig(bpy.types.Operator):
             return {'CANCELLED'}
 
         rig_names = {rig.name for rig in rigs}
+        bone_names = {bone.name for rig in rigs for bone in rig.data.bones}
         outputs = [obj for obj in scene.objects if obj.type == 'MESH' and
                    (obj.get('mr_output') in rig_names or
                     (obj.parent in rigs and (obj.get('mr_output') or obj.name.endswith('· Pinnacle-Rigger'))))]
         for obj in outputs:
-            mesh = obj.data
-            bpy.data.objects.remove(obj, do_unlink=True)
-            if mesh and mesh.users == 0:
-                bpy.data.meshes.remove(mesh)
+            world_matrix = obj.matrix_world.copy()
+            for modifier in list(obj.modifiers):
+                if modifier.type == 'ARMATURE' and modifier.object in rigs:
+                    obj.modifiers.remove(modifier)
+            for group in list(obj.vertex_groups):
+                if group.name in bone_names:
+                    obj.vertex_groups.remove(group)
+            obj.pop('mr_output', None)
+            if obj.parent in rigs:
+                obj.parent = None
+                obj.matrix_world = world_matrix
+            suffix = ' · Pinnacle-Rigger'
+            if obj.name.endswith(suffix):
+                obj.name = obj.name[:-len(suffix)]
+            obj.hide_set(False)
         for rig in rigs:
             armature = rig.data
             bpy.data.objects.remove(rig, do_unlink=True)
@@ -248,7 +260,9 @@ class MRDeleteRig(bpy.types.Operator):
                 bpy.data.armatures.remove(armature)
 
         settings.rig = None
-        settings.status = '生成リグを削除しました。元モデルを読み込んで再リギングできます'
+        settings.status = 'リグとウェイトを削除しました。残ったメッシュから再リギングできます'
+        if outputs:
+            core.select_only(outputs)
         return {'FINISHED'}
 
 
