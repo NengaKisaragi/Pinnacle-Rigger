@@ -215,6 +215,43 @@ class MRBuild(bpy.types.Operator):
             return {'CANCELLED'}
 
 
+class MRDeleteRig(bpy.types.Operator):
+    bl_idname = 'pr.delete_rig'
+    bl_label = 'リグ削除'
+    bl_description = '生成したリグとスキン済みメッシュを削除します。元モデルは再読み込みしてください'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        settings = scene.mr_settings
+        rigs = {obj for obj in scene.objects
+                if obj.type == 'ARMATURE' and ('mr_version' in obj or obj.get('mr_generated_rig'))}
+        if settings.rig and settings.rig.name in scene.objects and settings.rig.type == 'ARMATURE':
+            rigs.add(settings.rig)
+        if not rigs:
+            self.report({'INFO'}, '削除する生成リグはありません')
+            return {'CANCELLED'}
+
+        rig_names = {rig.name for rig in rigs}
+        outputs = [obj for obj in scene.objects if obj.type == 'MESH' and
+                   (obj.get('mr_output') in rig_names or
+                    (obj.parent in rigs and (obj.get('mr_output') or obj.name.endswith('· Pinnacle-Rigger'))))]
+        for obj in outputs:
+            mesh = obj.data
+            bpy.data.objects.remove(obj, do_unlink=True)
+            if mesh and mesh.users == 0:
+                bpy.data.meshes.remove(mesh)
+        for rig in rigs:
+            armature = rig.data
+            bpy.data.objects.remove(rig, do_unlink=True)
+            if armature and armature.users == 0:
+                bpy.data.armatures.remove(armature)
+
+        settings.rig = None
+        settings.status = '生成リグを削除しました。元モデルを読み込んで再リギングできます'
+        return {'FINISHED'}
+
+
 class MRPanel(bpy.types.Panel):
     bl_label = 'Pinnacle-Rigger'
     bl_idname = 'PR_PT_main'
@@ -247,13 +284,14 @@ class MRPanel(bpy.types.Panel):
         box.label(text='02 / マーカー', icon='EMPTY_AXIS')
         box.prop(settings, 'symmetry')
         layout.operator('pr.build_rig', icon='MOD_ARMATURE')
+        layout.operator('pr.delete_rig', icon='TRASH')
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
         layout.label(text='Pinnacle Rigger · ver1.0')
 
 
-classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRPanel)
+classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRDeleteRig, MRPanel)
 
 
 _draw_handle = None
