@@ -7,7 +7,7 @@ import bpy
 import addon_utils
 ROOT = Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory(prefix='pinnacle-addon-') as temporary:
-    with ZipFile(ROOT / 'dist' / 'pinnacle_rigger-1.01.zip') as archive:
+    with ZipFile(ROOT / 'dist' / 'pinnacle_rigger-1.02.zip') as archive:
         archive.extractall(temporary)
     sys.path.insert(0, temporary)
     for cycle in range(2):

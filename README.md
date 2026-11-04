@@ -1,4 +1,4 @@
-# Pinnacle Rigger · Local Auto Rig ver1.01
+# Pinnacle Rigger · Local Auto Rig ver1.02
 
 ![Pinnacle-Rigger running in Blender](docs/images/pinnacle-rigger-ui.png)
 
@@ -7,7 +7,7 @@
 
 ## インストール
 
-1. Blender の「編集 → プリファレンス → アドオン → ディスクからインストール」で `dist/pinnacle_rigger-1.01.zip` を選択します。
+1. Blender の「編集 → プリファレンス → アドオン → ディスクからインストール」で `dist/pinnacle_rigger-1.02.zip` を選択します。
 2. `Pinnacle Rigger` を有効にします。
 3. 3Dビューで `N` キーを押し，**Pinnacle-Rigger** タブを開きます。
 
@@ -31,7 +31,7 @@ Blender 4.2以上を対象にしています。実機テストはBlender 5.2.2 L
 
 対象の選択，マーカー作成，リグ生成はBlenderのUndoに対応しています。読み込んだオブジェクトのカスタムプロパティ `mr_*` は，このアドオンのセッション情報として予約しています。
 
-## ver1.01 の範囲
+## ver1.02 の範囲
 
 - 指ボーンはNo Fingers、2 Chain Fingers、3 Chain Fingers、Standard Skeletonから選べます。手首位置から指を推定し，親指は2節，ほかの指は3節で生成します。`mixamorig:Hips`，`LeftArm` 等の命名を使います。IK，アニメーション一覧，リターゲットは未実装です。
 - Neck Top（顎の高さにある首の上端）・手首・肘・膝・股の8マーカー。肩・背骨・足首・足先は体格比率から推定します。初期位置はヒューリスティックであり，学習済みの人体認識ではありません。
@@ -59,6 +59,6 @@ python3 build.py
 
 ## オプションとマーカーのリセット
 
-オプションは折りたたみ式です。マーカーを作成する前にHair，Breast，Skirt Front / Backを選び，選択に応じてマーカーとボーンを追加します。髪とスカートはそれぞれ3〜6本で分割できます。Front／Backは股の中心から対応するマーカーまでのチェーンになります。追加ボーンは `mixamorig:Hairs`，`mixamorig:Breasts`，`mixamorig:Skirts` の親の下にまとめ，親は非変形ボーンとしてワールドX=0に配置します。
+オプションは折りたたみ式です。マーカーを作成する前にHair，Breast，Skirt Front / Backを選び，選択に応じてマーカーとボーンを追加します。髪とスカートはそれぞれ3〜6本で分割できます。Skirt Front / Backマーカーを各チェーンの開始位置として使い，終点はそこからモデル高さの約22%下に自動生成します。開始ボーンは `Skirts` 親と非接続なので独立して動かせます。追加ボーンは `mixamorig:Hairs`，`mixamorig:Breasts`，`mixamorig:Skirts` の親の下にまとめ，親は非変形ボーンとしてワールドX=0に配置します。
 
 オプションを選び忘れた場合は「マーカー消去」を押し，チェックを変更してマーカーを作り直します。基本マーカー8個に加えてオプション用マーカーがあっても生成できます。各オプションは対応するマーカーが揃っているか個別に確認します。この操作は現在のセッションのマーカーを削除し，元のメッシュを再選択します。

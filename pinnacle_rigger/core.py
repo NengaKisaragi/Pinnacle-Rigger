@@ -298,7 +298,8 @@ def skeleton(points, low, high, settings=None):
         add('Skirts', points['Groin'], points['Groin'] + Vector((0, 0, h * .025)), 'Hips')
         for part in ('SkirtFront', 'SkirtBack'):
             for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
-                start, end = points['Groin'], points[part + suffix]
+                start = points[part + suffix]
+                end = start + Vector((0, 0, -h * .22))
                 previous = 'Skirts'
                 for index in range(settings.skirt_bones):
                     head = start.lerp(end, index / settings.skirt_bones)
@@ -373,16 +374,22 @@ def build(context):
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
-        rig['mr_version'] = '1.01'
+        rig['mr_version'] = '1.02'
         select_only([rig])
         bpy.ops.object.mode_set(mode='EDIT')
+        disconnected_skirt_starts = {
+            PREFIX + f'{part}.{side}1'
+            for part in ('SkirtFront', 'SkirtBack')
+            for side in ('Left', 'Right')
+        }
         for name, head, tail, parent in specs:
             bone = armature.edit_bones.new(name)
             bone.head, bone.tail = head, tail
             bone.use_deform = name not in {PREFIX + 'Hairs', PREFIX + 'Breasts', PREFIX + 'Skirts'}
             if parent:
                 bone.parent = armature.edit_bones[parent]
-            bone.use_connect = bool(parent and (bone.parent.tail - bone.head).length < 1e-5)
+            bone.use_connect = bool(parent and name not in disconnected_skirt_starts and
+                                    (bone.parent.tail - bone.head).length < 1e-5)
         bpy.ops.object.mode_set(mode='OBJECT')
         outputs, repaired = [], 0
         depsgraph = context.evaluated_depsgraph_get()
