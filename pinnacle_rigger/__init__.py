@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
-    'version': (1, 3, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
+    'version': (1, 4, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
     'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
@@ -41,8 +41,8 @@ def initialize_markers():
 class MRSettings(bpy.types.PropertyGroup):
     symmetry: BoolProperty(name='左右対称', default=True, update=symmetry_changed)
     hair_enabled: BoolProperty(name='髪', default=False)
-    hair_bones: IntProperty(name='髪のボーン数', default=3, min=3, max=6)
-    skirt_bones: IntProperty(name='スカートの分割数', default=3, min=3, max=6)
+    hair_bones: IntProperty(name='髪のボーン数', default=3, min=2, max=6)
+    skirt_bones: IntProperty(name='スカートの分割数', default=3, min=2, max=6)
     breasts_enabled: BoolProperty(name='胸', default=False)
     skirt_enabled: BoolProperty(name='スカート', default=False)
     finger_level: EnumProperty(
@@ -302,7 +302,7 @@ class MRPanel(bpy.types.Panel):
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
-        layout.label(text='Pinnacle Rigger · ver1.03')
+        layout.label(text='Pinnacle Rigger · ver1.04')
 
 
 classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRDeleteRig, MRPanel)

@@ -374,7 +374,7 @@ def build(context):
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
-        rig['mr_version'] = '1.03'
+        rig['mr_version'] = '1.04'
         select_only([rig])
         bpy.ops.object.mode_set(mode='EDIT')
         disconnected_skirt_starts = {
