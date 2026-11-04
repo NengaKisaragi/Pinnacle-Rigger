@@ -285,26 +285,26 @@ def skeleton(points, low, high, settings=None):
         for index in range(count):
             head = start.lerp(end, index / count)
             tail = start.lerp(end, (index + 1) / count)
-            name = f'Hair{index + 1}'
+            name = f'Hair.{index + 1}'
             add(name, head, tail, previous)
             previous = name
     if settings and settings.breasts_enabled:
         chest = points['Groin'].lerp(points['Chin'], .72)
         add('Breasts', Vector((0, chest.y, chest.z)), Vector((0, chest.y, chest.z + h * .025)), 'Spine2')
-        for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
+        for suffix, side in (('.L', '_L'), ('.R', '_R')):
             anchor = Vector((chest.x + (.055 if suffix == '.L' else -.055) * (high.x-low.x), chest.y, chest.z))
-            add('Breast.' + side, anchor, points['Breast' + suffix], 'Breasts')
+            add('Breast' + side, anchor, points['Breast' + suffix], 'Breasts')
     if settings and settings.skirt_enabled:
         add('Skirts', points['Groin'], points['Groin'] + Vector((0, 0, h * .025)), 'Hips')
         for part in ('SkirtFront', 'SkirtBack'):
-            for suffix, side in (('.L', 'Left'), ('.R', 'Right')):
+            for suffix, side in (('.L', '_L'), ('.R', '_R')):
                 start = points[part + suffix]
                 end = start + Vector((0, 0, -h * .22))
                 previous = 'Skirts'
                 for index in range(settings.skirt_bones):
                     head = start.lerp(end, index / settings.skirt_bones)
                     tail = start.lerp(end, (index + 1) / settings.skirt_bones)
-                    name = f'{part}.{side}{index + 1}'
+                    name = f'{part}{side}.{index + 1}'
                     add(name, head, tail, previous)
                     previous = name
     return specs
@@ -374,13 +374,13 @@ def build(context):
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
-        rig['mr_version'] = '1.02'
+        rig['mr_version'] = '1.03'
         select_only([rig])
         bpy.ops.object.mode_set(mode='EDIT')
         disconnected_skirt_starts = {
-            PREFIX + f'{part}.{side}1'
+            PREFIX + f'{part}_{side}.1'
             for part in ('SkirtFront', 'SkirtBack')
-            for side in ('Left', 'Right')
+            for side in ('L', 'R')
         }
         for name, head, tail, parent in specs:
             bone = armature.edit_bones.new(name)
