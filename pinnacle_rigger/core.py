@@ -316,15 +316,18 @@ def segment_distance(p, head, tail):
     return (p - (head + v * t)).length
 
 
-def bind_fallback(obj, rig, specs, height):
+def bind_fallback(obj, rig, specs, height, mesh_matrix=None):
     """Distance skinning for vertices that bone heat could not bind. Explicitly reported."""
     repaired = 0
     bone_names = {name for name, *_ in specs}
     deform_indices = {g.index for g in obj.vertex_groups if g.name in bone_names and not g.name.endswith((':Hairs', ':Breasts', ':Skirts'))}
+    if mesh_matrix is None:
+        mesh_matrix = obj.matrix_world
     for vertex in obj.data.vertices:
         if sum(g.weight for g in vertex.groups if g.group in deform_indices) > 1e-6:
             continue
-        candidates = sorted((segment_distance(vertex.co, a, b), name) for name, a, b, _ in specs
+        point = mesh_matrix @ vertex.co
+        candidates = sorted((segment_distance(point, a, b), name) for name, a, b, _ in specs
                             if not name.endswith(('_End', 'Top_End')))
         candidates = candidates[:3]
         # Sharply local weights reduce cross-limb leakage on loose clothing.
@@ -335,6 +338,72 @@ def bind_fallback(obj, rig, specs, height):
             group.add([vertex.index], value / total, 'REPLACE')
         repaired += 1
     return repaired
+
+
+def reweight(context, rig):
+    """Replace generated mesh weights using the armature's current rest bones."""
+    object_mode()
+    if not rig or rig.type != 'ARMATURE' or not ('mr_version' in rig or rig.get('mr_generated_rig')):
+        raise ValueError('Pinnacle-Riggerの生成リグを選択してください')
+    meshes = [obj for obj in context.scene.objects if obj.type == 'MESH' and
+              (obj.get('mr_output') == rig.name or obj.parent == rig)]
+    if not meshes:
+        raise ValueError('このリグに接続されたメッシュがありません')
+
+    specs = [(bone.name, rig.matrix_world @ bone.head_local,
+              rig.matrix_world @ bone.tail_local,
+              bone.parent.name if bone.parent else None)
+             for bone in rig.data.bones if bone.use_deform]
+    if not specs:
+        raise ValueError('変形用ボーンがありません')
+    if any((tail - head).length_squared < 1e-12 for _, head, tail, _ in specs):
+        raise ValueError('長さがゼロのボーンがあります。ボーン位置を確認してください')
+    low, high = bounds(meshes)
+    height = high.z - low.z
+    if height <= 1e-6:
+        raise ValueError('メッシュの高さを取得できません')
+
+    bone_names = {bone.name for bone in rig.data.bones}
+    repaired = 0
+    for obj in meshes:
+        world_matrix = obj.matrix_world.copy()
+        for modifier in list(obj.modifiers):
+            if modifier.type == 'ARMATURE' and modifier.object == rig:
+                obj.modifiers.remove(modifier)
+        for group in list(obj.vertex_groups):
+            if group.name in bone_names:
+                obj.vertex_groups.remove(group)
+
+        obj.parent = None
+        obj.matrix_world = world_matrix
+        select_only([obj, rig], rig)
+        try:
+            result = bpy.ops.object.parent_set(type='ARMATURE_AUTO', keep_transform=True)
+            if 'FINISHED' not in result:
+                raise RuntimeError('自動ウェイトを計算できませんでした')
+        except RuntimeError:
+            pass  # The distance fallback below fills vertices bone heat cannot bind.
+        if obj.parent != rig:
+            obj.parent = rig
+        obj.matrix_world = world_matrix
+        if not any(mod.type == 'ARMATURE' and mod.object == rig for mod in obj.modifiers):
+            obj.modifiers.new('Pinnacle-Rigger', 'ARMATURE').object = rig
+
+        repaired += bind_fallback(obj, rig, specs, height, obj.matrix_world)
+        deform_names = {bone.name for bone in rig.data.bones if bone.use_deform}
+        deform_indices = {group.index for group in obj.vertex_groups if group.name in deform_names}
+        deform_groups = {group.index: group for group in obj.vertex_groups if group.index in deform_indices}
+        for vertex in obj.data.vertices:
+            weights = [(assignment.group, assignment.weight) for assignment in vertex.groups
+                       if assignment.group in deform_indices]
+            total = sum(weight for _, weight in weights)
+            if total > 1e-8:
+                for group_index, weight in weights:
+                    deform_groups[group_index].add([vertex.index], weight / total, 'REPLACE')
+
+    select_only([rig])
+    context.scene.mr_settings.rig = rig
+    return len(meshes), repaired
 
 
 def build(context):
@@ -374,7 +443,7 @@ def build(context):
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
-        rig['mr_version'] = '1.04'
+        rig['mr_version'] = '1.05'
         select_only([rig])
         bpy.ops.object.mode_set(mode='EDIT')
         disconnected_skirt_starts = {

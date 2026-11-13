@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
-    'version': (1, 4, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
+    'version': (1, 5, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
     'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
@@ -215,6 +215,31 @@ class MRBuild(bpy.types.Operator):
             return {'CANCELLED'}
 
 
+class MRReweight(bpy.types.Operator):
+    bl_idname = 'pr.reweight'
+    bl_label = 'ウェイト再計算'
+    bl_description = '現在のレストポーズ骨格を使って、接続メッシュのウェイトを振り直します'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        try:
+            settings = context.scene.mr_settings
+            rig = settings.rig
+            if not rig:
+                rig = next((obj for obj in context.scene.objects
+                            if obj.type == 'ARMATURE' and
+                            ('mr_version' in obj or obj.get('mr_generated_rig'))), None)
+            mesh_count, repaired = core.reweight(context, rig)
+            report = f'{mesh_count}メッシュのウェイト再計算 / 距離補完 {repaired:,}頂点'
+            settings.rig = rig
+            settings.status = report
+            self.report({'INFO'}, report)
+            return {'FINISHED'}
+        except Exception as exc:
+            self.report({'ERROR'}, str(exc))
+            return {'CANCELLED'}
+
+
 class MRDeleteRig(bpy.types.Operator):
     bl_idname = 'pr.delete_rig'
     bl_label = 'リグ削除'
@@ -298,14 +323,17 @@ class MRPanel(bpy.types.Panel):
         box.label(text='02 / マーカー', icon='EMPTY_AXIS')
         box.prop(settings, 'symmetry')
         layout.operator('pr.build_rig', icon='MOD_ARMATURE')
+        weight_row = layout.row()
+        weight_row.enabled = bool(settings.rig)
+        weight_row.operator('pr.reweight', icon='MOD_VERTEX_WEIGHT')
         layout.operator('pr.delete_rig', icon='TRASH')
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
-        layout.label(text='Pinnacle Rigger · ver1.04')
+        layout.label(text='Pinnacle Rigger · ver1.05')
 
 
-classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRDeleteRig, MRPanel)
+classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRReweight, MRDeleteRig, MRPanel)
 
 
 _draw_handle = None
