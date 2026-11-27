@@ -340,9 +340,8 @@ def bind_fallback(obj, rig, specs, height, mesh_matrix=None):
     return repaired
 
 
-def reweight(context, rig):
-    """Replace generated mesh weights using the armature's current rest bones."""
-    object_mode()
+def reweight_targets(context, rig):
+    """Validate a generated rig and return its meshes, deform bone specs and model height."""
     if not rig or rig.type != 'ARMATURE' or not ('mr_version' in rig or rig.get('mr_generated_rig')):
         raise ValueError('Pinnacle-Riggerの生成リグを選択してください')
     meshes = [obj for obj in context.scene.objects if obj.type == 'MESH' and
@@ -362,7 +361,13 @@ def reweight(context, rig):
     height = high.z - low.z
     if height <= 1e-6:
         raise ValueError('メッシュの高さを取得できません')
+    return meshes, specs, height
 
+
+def reweight(context, rig):
+    """Replace generated mesh weights using the armature's current rest bones."""
+    object_mode()
+    meshes, specs, height = reweight_targets(context, rig)
     bone_names = {bone.name for bone in rig.data.bones}
     repaired = 0
     for obj in meshes:
@@ -406,6 +411,77 @@ def reweight(context, rig):
     return len(meshes), repaired
 
 
+def reweight_unweighted(context, rig):
+    """Weight only the vertices without any deform bone weight; keep all other weights."""
+    object_mode()
+    meshes, specs, height = reweight_targets(context, rig)
+    # A mesh parented to a single bone follows it without weights.
+    meshes = [obj for obj in meshes if obj.get('mr_output') == rig.name or obj.parent_type != 'BONE']
+    bone_names = {bone.name for bone in rig.data.bones}
+    deform_names = {name for name, *_ in specs}
+    selected = list(context.selected_objects)
+    active = context.view_layer.objects.active
+    rig_hidden = rig.hide_get()
+    total = repaired = 0
+    try:
+        for obj in meshes:
+            deform_indices = {g.index for g in obj.vertex_groups if g.name in deform_names}
+            targets = [v.index for v in obj.data.vertices
+                       if sum(g.weight for g in v.groups if g.group in deform_indices) <= 1e-6]
+            if not targets:
+                continue
+
+            # Bone heat rewrites a whole mesh, so run it on a disposable copy.
+            temp = obj.copy()
+            temp.data = obj.data.copy()
+            context.scene.collection.objects.link(temp)
+            try:
+                temp.parent = None
+                temp.matrix_world = obj.matrix_world.copy()
+                temp.constraints.clear()
+                temp.modifiers.clear()
+                temp.hide_viewport = temp.hide_select = False
+                for group in list(temp.vertex_groups):
+                    if group.name in bone_names:
+                        temp.vertex_groups.remove(group)
+                select_only([temp, rig], rig)
+                try:
+                    bpy.ops.object.parent_set(type='ARMATURE_AUTO', keep_transform=True)
+                except RuntimeError:
+                    pass  # The distance fallback below fills vertices bone heat cannot bind.
+                names = {g.index: g.name for g in temp.vertex_groups if g.name in deform_names}
+                heat = {}
+                for index in targets:
+                    weights = [(names[g.group], g.weight) for g in temp.data.vertices[index].groups
+                               if g.group in names]
+                    if sum(weight for _, weight in weights) > 1e-6:
+                        heat[index] = weights
+            finally:
+                data = temp.data
+                bpy.data.objects.remove(temp, do_unlink=True)
+                if data.users == 0:
+                    bpy.data.meshes.remove(data)
+
+            for index, weights in heat.items():
+                length = sum(weight for _, weight in weights)
+                for name, weight in weights:
+                    group = obj.vertex_groups.get(name) or obj.vertex_groups.new(name=name)
+                    group.add([index], weight / length, 'REPLACE')
+            # Only the targets that bone heat missed still lack a deform weight.
+            repaired += bind_fallback(obj, rig, specs, height, obj.matrix_world)
+            obj.data.update()
+            total += len(targets)
+    finally:
+        rig.hide_set(rig_hidden)
+        if selected:
+            select_only(selected, active)
+        else:
+            bpy.ops.object.select_all(action='DESELECT')
+            context.view_layer.objects.active = active
+    context.scene.mr_settings.rig = rig
+    return total, repaired
+
+
 def build(context):
     object_mode()
     session = context.scene.mr_settings.session
@@ -443,7 +519,7 @@ def build(context):
         created.append(rig)
         rig.show_in_front = True
         rig['mr_session'] = session
-        rig['mr_version'] = '1.06'
+        rig['mr_version'] = '1.07'
         select_only([rig])
         bpy.ops.object.mode_set(mode='EDIT')
         disconnected_skirt_starts = {

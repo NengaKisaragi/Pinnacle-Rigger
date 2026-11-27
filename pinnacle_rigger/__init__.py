@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
-    'version': (1, 6, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
+    'version': (1, 7, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
     'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
@@ -240,6 +240,27 @@ class MRReweight(bpy.types.Operator):
             return {'CANCELLED'}
 
 
+class MRReweightUnweighted(bpy.types.Operator):
+    bl_idname = 'pr.reweight_unweighted'
+    bl_label = 'ウエイトを再計算（ウエイトなしの頂点のみ）'
+    bl_description = '既存のウエイトは変えずに、ボーンのウエイトがない頂点だけを計算します'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        try:
+            settings = context.scene.mr_settings
+            rig = settings.rig
+            total, repaired = core.reweight_unweighted(context, rig)
+            report = (f'ウエイトなし {total:,}頂点を再計算 / 距離補完 {repaired:,}頂点' if total
+                      else 'ウエイトなしの頂点はありません')
+            settings.status = report
+            self.report({'INFO'}, report)
+            return {'FINISHED'}
+        except Exception as exc:
+            self.report({'ERROR'}, str(exc))
+            return {'CANCELLED'}
+
+
 class MRSelectUnweighted(bpy.types.Operator):
     bl_idname = 'pr.select_unweighted'
     bl_label = 'ウエイトなしチェック'
@@ -369,14 +390,17 @@ class MRPanel(bpy.types.Panel):
         weight_row.enabled = bool(settings.rig)
         weight_row.operator('pr.reweight', icon='MOD_VERTEX_WEIGHT')
         layout.operator('pr.select_unweighted', icon='VERTEXSEL')
+        partial_row = layout.row()
+        partial_row.enabled = bool(settings.rig)
+        partial_row.operator('pr.reweight_unweighted', icon='MOD_VERTEX_WEIGHT')
         layout.operator('pr.delete_rig', icon='TRASH')
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
-        layout.label(text='Pinnacle Rigger · ver1.06')
+        layout.label(text='Pinnacle Rigger · ver1.07')
 
 
-classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRReweight, MRSelectUnweighted, MRDeleteRig, MRPanel)
+classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRReweight, MRReweightUnweighted, MRSelectUnweighted, MRDeleteRig, MRPanel)
 
 
 _draw_handle = None
