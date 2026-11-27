@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Pinnacle Rigger', 'author': 'Pinnacle Rigger contributors',
-    'version': (1, 5, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
+    'version': (1, 6, 0), 'blender': (4, 2, 0), 'location': '3D View > Sidebar > Pinnacle-Rigger',
     'description': 'Place landmarks and generate a local humanoid rig',
     'category': 'Rigging',
 }
@@ -240,6 +240,48 @@ class MRReweight(bpy.types.Operator):
             return {'CANCELLED'}
 
 
+class MRSelectUnweighted(bpy.types.Operator):
+    bl_idname = 'pr.select_unweighted'
+    bl_label = 'ウエイトなしチェック'
+    bl_description = '選択中のメッシュで、ウエイトがまったく設定されていない頂点を編集モードで選択します'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        meshes = [obj for obj in context.selected_objects if obj.type == 'MESH']
+        if not meshes and context.object and context.object.type == 'MESH':
+            meshes = [context.object]
+        if not meshes:
+            rig = context.scene.mr_settings.rig
+            meshes = [obj for obj in context.scene.objects if obj.type == 'MESH' and rig and
+                      (obj.get('mr_output') == rig.name or obj.parent == rig)]
+        if not meshes:
+            self.report({'ERROR'}, 'チェックするメッシュを選択してください')
+            return {'CANCELLED'}
+
+        # Edit-mode changes must be written back to mesh data before reading weights.
+        core.object_mode()
+        total = 0
+        for obj in meshes:
+            mesh = obj.data
+            flags = [not any(g.weight > 0 for g in vertex.groups) for vertex in mesh.vertices]
+            mesh.vertices.foreach_set('select', flags)
+            mesh.edges.foreach_set('select', [False] * len(mesh.edges))
+            mesh.polygons.foreach_set('select', [False] * len(mesh.polygons))
+            mesh.update()
+            total += sum(flags)
+
+        active = context.object if context.object in meshes else meshes[0]
+        core.select_only(meshes, active)
+        context.tool_settings.mesh_select_mode = (True, False, False)
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        report = (f'ウエイトなし {total:,}頂点を選択しました' if total
+                  else 'ウエイトなしの頂点はありません')
+        context.scene.mr_settings.status = report
+        self.report({'WARNING'} if total else {'INFO'}, report)
+        return {'FINISHED'}
+
+
 class MRDeleteRig(bpy.types.Operator):
     bl_idname = 'pr.delete_rig'
     bl_label = 'リグ削除'
@@ -326,14 +368,15 @@ class MRPanel(bpy.types.Panel):
         weight_row = layout.row()
         weight_row.enabled = bool(settings.rig)
         weight_row.operator('pr.reweight', icon='MOD_VERTEX_WEIGHT')
+        layout.operator('pr.select_unweighted', icon='VERTEXSEL')
         layout.operator('pr.delete_rig', icon='TRASH')
         layout.separator()
         for part in settings.status.split(' / '):
             layout.label(text=part)
-        layout.label(text='Pinnacle Rigger · ver1.05')
+        layout.label(text='Pinnacle Rigger · ver1.06')
 
 
-classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRReweight, MRDeleteRig, MRPanel)
+classes = (MRSettings, MRMarkers, MRPlace, MRClearMarkers, MRBuild, MRReweight, MRSelectUnweighted, MRDeleteRig, MRPanel)
 
 
 _draw_handle = None
