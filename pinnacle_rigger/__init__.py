@@ -229,8 +229,10 @@ class MRReweight(bpy.types.Operator):
                 rig = next((obj for obj in context.scene.objects
                             if obj.type == 'ARMATURE' and
                             ('mr_version' in obj or obj.get('mr_generated_rig'))), None)
-            mesh_count, repaired = core.reweight(context, rig)
+            mesh_count, repaired, added = core.reweight(context, rig)
             report = f'{mesh_count}メッシュのウェイト再計算 / 距離補完 {repaired:,}頂点'
+            if added:
+                report += f' / 頂点グループ追加 {added:,}個'
             settings.rig = rig
             settings.status = report
             self.report({'INFO'}, report)
@@ -250,9 +252,11 @@ class MRReweightUnweighted(bpy.types.Operator):
         try:
             settings = context.scene.mr_settings
             rig = settings.rig
-            total, repaired = core.reweight_unweighted(context, rig)
+            total, repaired, added = core.reweight_unweighted(context, rig)
             report = (f'ウエイトなし {total:,}頂点を再計算 / 距離補完 {repaired:,}頂点' if total
                       else 'ウエイトなしの頂点はありません')
+            if added:
+                report += f' / 頂点グループ追加 {added:,}個'
             settings.status = report
             self.report({'INFO'}, report)
             return {'FINISHED'}

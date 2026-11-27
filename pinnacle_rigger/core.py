@@ -364,13 +364,22 @@ def reweight_targets(context, rig):
     return meshes, specs, height
 
 
+def add_missing_groups(obj, specs):
+    """Create an empty vertex group for every deform bone the mesh has none for."""
+    missing = [name for name, *_ in specs if name not in obj.vertex_groups]
+    for name in missing:
+        obj.vertex_groups.new(name=name)
+    return len(missing)
+
+
 def reweight(context, rig):
     """Replace generated mesh weights using the armature's current rest bones."""
     object_mode()
     meshes, specs, height = reweight_targets(context, rig)
     bone_names = {bone.name for bone in rig.data.bones}
-    repaired = 0
+    repaired = added = 0
     for obj in meshes:
+        added += add_missing_groups(obj, specs)
         world_matrix = obj.matrix_world.copy()
         for modifier in list(obj.modifiers):
             if modifier.type == 'ARMATURE' and modifier.object == rig:
@@ -378,6 +387,8 @@ def reweight(context, rig):
         for group in list(obj.vertex_groups):
             if group.name in bone_names:
                 obj.vertex_groups.remove(group)
+        # Recreate them empty so every deform bone has a group even if bone heat fails.
+        add_missing_groups(obj, specs)
 
         obj.parent = None
         obj.matrix_world = world_matrix
@@ -408,7 +419,7 @@ def reweight(context, rig):
 
     select_only([rig])
     context.scene.mr_settings.rig = rig
-    return len(meshes), repaired
+    return len(meshes), repaired, added
 
 
 def reweight_unweighted(context, rig):
@@ -422,9 +433,10 @@ def reweight_unweighted(context, rig):
     selected = list(context.selected_objects)
     active = context.view_layer.objects.active
     rig_hidden = rig.hide_get()
-    total = repaired = 0
+    total = repaired = added = 0
     try:
         for obj in meshes:
+            added += add_missing_groups(obj, specs)
             deform_indices = {g.index for g in obj.vertex_groups if g.name in deform_names}
             targets = [v.index for v in obj.data.vertices
                        if sum(g.weight for g in v.groups if g.group in deform_indices) <= 1e-6]
@@ -479,7 +491,7 @@ def reweight_unweighted(context, rig):
             bpy.ops.object.select_all(action='DESELECT')
             context.view_layer.objects.active = active
     context.scene.mr_settings.rig = rig
-    return total, repaired
+    return total, repaired, added
 
 
 def build(context):
